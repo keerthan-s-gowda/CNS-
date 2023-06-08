@@ -1,0 +1,107 @@
+#include <iostream>
+#include <string>
+#include <vector>
+
+typedef unsigned long long UInt64;
+
+const UInt64 WORD_SIZE = 64;
+const UInt64 ROTATION_CONSTANTS[8] = {14, 16, 52, 57, 23, 40, 5, 37};
+
+// Threefish Encryption Function
+void encryptThreefish(const std::vector<UInt64>& plaintext, const std::vector<UInt64>& key, std::vector<UInt64>& ciphertext)
+{
+    UInt64 b0 = plaintext[0];
+    UInt64 b1 = plaintext[1];
+    UInt64 b2 = plaintext[2];
+    UInt64 b3 = plaintext[3];
+    UInt64 k0 = key[0];
+    UInt64 k1 = key[1];
+    UInt64 k2 = key[2];
+    UInt64 k3 = key[3];
+
+    for (UInt64 i = 0; i < 72; ++i)
+    {
+        b0 += b1;
+        b1 = ((b1 << ROTATION_CONSTANTS[i % 8]) | (b1 >> (WORD_SIZE - ROTATION_CONSTANTS[i % 8]))) ^ b0;
+        b2 += b3;
+        b3 = ((b3 << ROTATION_CONSTANTS[i % 8]) | (b3 >> (WORD_SIZE - ROTATION_CONSTANTS[i % 8]))) ^ b2;
+        b1 += b2;
+        b2 = ((b2 << (b2 % 8)) | (b2 >> (WORD_SIZE - (b2 % 8)))) ^ b1;
+        b3 += b0;
+        b0 = ((b0 << (b0 % 8)) | (b0 >> (WORD_SIZE - (b0 % 8)))) ^ b3;
+
+        if (i % 4 == 0)
+        {
+            b0 += k0;
+            b1 += k1;
+            b2 += k2;
+            b3 += k3;
+        }
+        else if (i % 4 == 1)
+        {
+            b0 += k1;
+            b1 += k2;
+            b2 += k3;
+            b3 += k0;
+        }
+        else if (i % 4 == 2)
+        {
+            b0 += k2;
+            b1 += k3;
+            b2 += k0;
+            b3 += k1;
+        }
+        else if (i % 4 == 3)
+        {
+            b0 += k3;
+            b1 += k0;
+            b2 += k1;
+            b3 += k2;
+        }
+
+        b0 &= 0xFFFFFFFFFFFFFFFF;
+        b1 &= 0xFFFFFFFFFFFFFFFF;
+        b2 &= 0xFFFFFFFFFFFFFFFF;
+        b3 &= 0xFFFFFFFFFFFFFFFF;
+    }
+
+    ciphertext[0] = b0;
+    ciphertext[1] = b1;
+    ciphertext[2] = b2;
+    ciphertext[3] = b3;
+}
+
+int main()
+{
+    std::string plaintext;
+    std::cout << "Enter the plaintext message: ";
+    std::getline(std::cin, plaintext);
+
+    std::vector<UInt64> key = {0x0123456789ABCDEF, 0xFEDCBA9876543210, 0x02468ACE13579BDF, 0xDFB97531CE8AC624};
+    std::vector<UInt64> ciphertext(4);
+
+    // Convert the plaintext message to the vector of UInt64 values
+    std::vector<UInt64> plaintextBlocks;
+    for (std::size_t i = 0; i < plaintext.length(); i += 8)
+    {
+        std::string block = plaintext.substr(i, 8);
+        UInt64 blockValue = 0;
+        for (std::size_t j = 0; j < 8; ++j)
+        {
+            blockValue <<= 8;
+            blockValue |= static_cast<UInt64>(block[j]);
+        }
+        plaintextBlocks.push_back(blockValue);
+    }
+
+    encryptThreefish(plaintextBlocks, key, ciphertext);
+
+    std::cout << "Ciphertext: ";
+    for (const auto& block : ciphertext)
+    {
+        std::cout << std::hex << block;
+    }
+    std::cout << std::endl;
+
+    return 0;
+}
