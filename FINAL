@@ -1,0 +1,100 @@
+#include <iostream>
+#include <string>
+#include <bitset>
+
+using namespace std;
+
+// Caesar Cipher encryption function
+string caesarEncrypt(const string& plaintext, int key) {
+    string ciphertext;
+    int length = plaintext.length();
+
+    for (int i = 0; i < length; ++i) {
+        if (isalpha(plaintext[i])) {
+            char c = islower(plaintext[i]) ? 'a' : 'A';
+            ciphertext += (plaintext[i] - c + key) % 26 + c;
+        }
+        else {
+            ciphertext += plaintext[i];
+        }
+    }
+
+    return ciphertext;
+}
+
+// Vigenère Cipher encryption function
+string vigenereEncrypt(const string& plaintext, const string& keyword) {
+    string ciphertext;
+    int keywordLength = keyword.length();
+    int length = plaintext.length();
+
+    for (int i = 0; i < length; ++i) {
+        if (isalpha(plaintext[i])) {
+            char c = islower(plaintext[i]) ? 'a' : 'A';
+            char k = islower(keyword[i % keywordLength]) ? 'a' : 'A';
+
+            ciphertext += (plaintext[i] - c + keyword[i % keywordLength] - k) % 26 + c;
+        }
+        else {
+            ciphertext += plaintext[i];
+        }
+    }
+
+    return ciphertext;
+}
+
+// XOR operation between two characters
+char xorChars(char a, char b) {
+    return (a ^ b);
+}
+
+// Modified Hybrid encryption function
+string modifiedHybridEncrypt(const string& plaintext, int caesarKey, const string& vigenereKeyword) {
+    // Step 1: Caesar Cipher encryption
+    string caesarCiphertext = caesarEncrypt(plaintext, caesarKey);
+
+    // Step 2: Generate Vigenère key using Caesar Cipher on the vigenereKeyword
+    string vigenereKey = caesarEncrypt(vigenereKeyword, caesarKey);
+
+    // Step 3: Vigenère Cipher encryption
+    string vigenereCiphertext = vigenereEncrypt(caesarCiphertext, vigenereKey);
+
+    // Step 4: XOR with binary representation of first key
+    string modifiedHybridCiphertext;
+    int keyBinary = caesarKey + 'A';
+
+    for (int i = 0; i < vigenereCiphertext.length(); ++i) {
+        char c = xorChars(vigenereCiphertext[i], bitset<8>(keyBinary).to_string()[i % 8]);
+        modifiedHybridCiphertext += c;
+    }
+
+    return modifiedHybridCiphertext;
+}
+
+int main() {
+    // Get the plaintext from the user
+    string plaintext;
+    cout << "Enter the plaintext: ";
+    getline(cin, plaintext);
+
+    // Get the Caesar key from the user
+    int caesarKey;
+    cout << "Enter the Caesar key (1-26): ";
+    cin >> caesarKey;
+
+    // Ignore the newline character in the input buffer
+    cin.ignore();
+
+    // Get the Vigenère keyword from the user
+    string vigenereKeyword;
+    cout << "Enter the Vigenère keyword: ";
+    getline(cin, vigenereKeyword);
+
+    // Encrypt using Modified Hybrid cipher
+    string ciphertext = modifiedHybridEncrypt(plaintext, caesarKey, vigenereKeyword);
+
+    // Output the encrypted ciphertext
+    cout << "Modified Hybrid Ciphertext: " << ciphertext << endl;
+
+    return 0;
+}
